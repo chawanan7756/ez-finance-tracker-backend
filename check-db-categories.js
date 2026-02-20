@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: "postgresql://postgres:ehWdOXlYTUrfFhvdmNjqSZQHwsItAuUj@interchange.proxy.rlwy.net:44682/railway"
+      url: "postgresql://postgres:ehWdOXlYTUrfFhvdmNjqSZQHwsItAuUj@postgres.railway.internal:5432/railway"
     }
   }
 });
@@ -11,7 +11,7 @@ async function main() {
   console.log('Fetching categories from Railway...');
   const count = await prisma.category.count();
   console.log(`Total categories: ${count}`);
-  
+
   const categories = await prisma.category.findMany({
     take: 5
   });
