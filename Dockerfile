@@ -19,8 +19,8 @@ RUN npx prisma generate
 COPY src ./src
 
 # Default environment variables
-ENV PORT=3000
-EXPOSE 3000
+ENV PORT=3030
+EXPOSE 3030
 
 # Run migrations and then start the server
 CMD npx prisma migrate deploy && node src/index.js
