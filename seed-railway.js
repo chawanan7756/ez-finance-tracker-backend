@@ -45,14 +45,16 @@ const DEFAULT_CATEGORIES = [
 async function main() {
     console.log('Seeding categories to Railway...');
     for (const cat of DEFAULT_CATEGORIES) {
-        await prisma.category.upsert({
-            where: {
-                name_lineUserId: { name: cat.name, lineUserId: null }
-            },
-            update: {},
-            create: cat
+        const existing = await prisma.category.findFirst({
+            where: { name: cat.name, lineUserId: null }
         });
-        console.log(`Seeded: ${cat.name}`);
+
+        if (!existing) {
+            await prisma.category.create({ data: cat });
+            console.log(`Created: ${cat.name}`);
+        } else {
+            console.log(`Exists: ${cat.name}`);
+        }
     }
     console.log('Done!');
 }
