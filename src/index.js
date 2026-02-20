@@ -13,7 +13,7 @@ const { authMiddleware } = require('./middleware/auth');
 const { initScheduler } = require('./line/scheduler');
 
 const app = express();
-const PORT = process.env.PORT || 3030;
+const PORT = 3030; // Forced to match Railway Public Networking
 
 // CORS for Android app
 app.use(cors());
