@@ -34,6 +34,12 @@ const DEFAULT_CATEGORIES = [
     { name: 'เงินคืน', icon: '🔄', type: 'income', color: '#81ECEC' },
     { name: 'โอนเงินเข้า', icon: '💰', type: 'income', color: '#74B9FF' },
     { name: 'รายได้อื่นๆ', icon: '✨', type: 'income', color: '#DFE6E9' },
+
+    // Savings categories
+    { name: 'ออมเงินสำรอง', icon: '💰', type: 'savings', color: '#00CEC9' },
+    { name: 'เงินออมเพื่อการลงทุน', icon: '📈', type: 'savings', color: '#0984E3' },
+    { name: 'ออมเพื่อเป้าหมาย', icon: '🎯', type: 'savings', color: '#E84393' },
+    { name: 'เงินเก็บทั่วไป', icon: '🏦', type: 'savings', color: '#636E72' },
 ];
 
 // GET /api/categories - List all categories
@@ -56,22 +62,26 @@ router.get('/', async (req, res) => {
         // Check if global categories exist
         const globalCount = await prisma.category.count({ where: { lineUserId: null } });
 
-        // If no global categories exist, seed defaults
-        if (globalCount === 0) {
-            console.log('Seeding default categories...');
-            for (const cat of DEFAULT_CATEGORIES) {
-                try {
-                    // Use findFirst + create to avoid unique constraint issues with NULL in some DBs
-                    const existing = await prisma.category.findFirst({
-                        where: { name: cat.name, lineUserId: null }
-                    });
-                    if (!existing) {
-                        await prisma.category.create({ data: cat });
-                    }
-                } catch (e) {
-                    console.error(`Failed to seed category ${cat.name}:`, e.message);
-                }
-            }
+        // If no global categories exist OR if we need to force update/check defaults
+        if (globalCount < DEFAULT_CATEGORIES.length) {
+            console.log(`[Seeder] Checking/Seeding categories. Current count: ${globalCount}`);
+
+            // Use a transaction or parallel ops to seed
+            const operations = DEFAULT_CATEGORIES.map(cat =>
+                prisma.category.upsert({
+                    where: {
+                        name_lineUserId: {
+                            name: cat.name,
+                            lineUserId: null // Unique constraint is name + lineUserId
+                        }
+                    },
+                    update: {}, // Don't change existing
+                    create: cat
+                }).catch(e => console.error(`[Seeder] Failed to seed ${cat.name}:`, e.message))
+            );
+
+            await Promise.all(operations);
+            console.log('[Seeder] Seeding process completed.');
 
             // Re-fetch after seeding
             categories = await prisma.category.findMany({

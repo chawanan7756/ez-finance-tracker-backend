@@ -183,8 +183,12 @@ router.post('/', async (req, res) => {
 
         res.status(201).json(transaction);
     } catch (err) {
-        console.error('POST /transactions error:', err);
-        res.status(500).json({ error: 'Failed to create transaction' });
+        console.error('POST /transactions error details:', err);
+        res.status(500).json({
+            error: 'Failed to create transaction',
+            details: err.message,
+            code: err.code
+        });
     }
 });
 
