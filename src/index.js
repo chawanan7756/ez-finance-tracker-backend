@@ -74,6 +74,25 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Deep Link Redirector for LINE Login (Proxy for Expo Go)
+app.get('/api/auth/line/callback', (req, res) => {
+    const { code, state, error, error_description } = req.query;
+
+    // Default Expo Go URL - user should update if their IP changes
+    // But we can try to guess or use the standard one from previous logs
+    const expoRedirectBase = "exp://192.168.89.224:8081/--/redirect";
+
+    if (error) {
+        return res.redirect(`${expoRedirectBase}?error=${error}&error_description=${error_description}`);
+    }
+
+    // Build the redirect URL back to Expo Go
+    const finalUrl = `${expoRedirectBase}?code=${code}${state ? `&state=${state}` : ''}`;
+
+    console.log(`[Auth Proxy] Redirecting back to: ${finalUrl}`);
+    res.redirect(finalUrl);
+});
+
 // Deep Link Redirector for LINE
 app.get('/open', (req, res) => {
     res.send(`
