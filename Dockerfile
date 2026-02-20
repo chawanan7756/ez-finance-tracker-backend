@@ -2,6 +2,9 @@ FROM node:18-slim
 
 WORKDIR /app
 
+# Install openssl and other dependencies for Prisma
+RUN apt-get update -y && apt-get install -y openssl
+
 # Copy dependency files
 COPY package*.json ./
 
