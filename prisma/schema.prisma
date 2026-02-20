@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  type        String // "income" | "expense" | "savings"
+  amount      Float
+  category    String
+  description String?
+  source      String   @default("manual") // "manual" | "line" | "khunthong" | "bank_notify"
+  lineUserId  String   @default("LEGACY")
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([lineUserId])
+}
+
+model Budget {
+  id           Int      @id @default(autoincrement())
+  category     String
+  monthlyLimit Float
+  month        String // "2026-02" format
+  lineUserId   String   @default("LEGACY")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([category, month, lineUserId])
+  @@index([lineUserId])
+}
+
+model Category {
+  id         Int     @id @default(autoincrement())
+  name       String
+  icon       String  @default("💰")
+  type       String // "income" | "expense" | "savings" | "both"
+  color      String  @default("#4CAF50")
+  lineUserId String? // null for global categories
+
+  @@unique([name, lineUserId])
+  @@index([lineUserId])
+}
+
+model DebugLog {
+  id          Int      @id @default(autoincrement())
+  lineUserId  String?
+  displayName String?
+  level       String   @default("info") // "info" | "warn" | "error" | "debug"
+  tag         String   @default("app") // e.g. "login", "sync", "network", "crash"
+  message     String
+  metadata    String? // JSON string for extra data (device info, stack trace, etc.)
+  appVersion  String?
+  deviceInfo  String?
+  createdAt   DateTime @default(now())
+
+  @@index([lineUserId])
+  @@index([level])
+  @@index([createdAt])
+}
+
+model UserProfile {
+  id                   Int      @id @default(autoincrement())
+  lineUserId           String   @unique
+  displayName          String?
+  pictureUrl           String?
+  statusMessage        String?
+  notificationsEnabled Boolean  @default(true)
+  lastActiveAt         DateTime @default(now())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([lineUserId])
+}

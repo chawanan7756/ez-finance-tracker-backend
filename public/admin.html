@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ez Finance — Admin Debug Console</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --card: #1f2937;
+            --border: #30363d;
+            --gold: #d4a543;
+            --gold-dim: rgba(212, 165, 67, 0.15);
+            --green: #00c897;
+            --red: #ff6b6b;
+            --orange: #ffaa00;
+            --blue: #58a6ff;
+            --text: #f0f0f0;
+            --text-dim: #8b949e;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0d2137);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header .badge {
+            font-size: 11px;
+            background: var(--gold-dim);
+            color: var(--gold);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            padding: 16px 24px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-card .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .stat-card .stat-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .stat-card.error .stat-value {
+            color: var(--red);
+        }
+
+        .stat-card.users .stat-value {
+            color: var(--blue);
+        }
+
+        .stat-card.time .stat-value {
+            color: var(--green);
+            font-size: 16px;
+        }
+
+        /* Filters */
+        .filters {
+            padding: 12px 24px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .filters select,
+        .filters input,
+        .filters button {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: var(--font);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .filters select:focus,
+        .filters input:focus {
+            border-color: var(--gold);
+        }
+
+        .filters input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filters button {
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .filters button:hover {
+            border-color: var(--gold);
+        }
+
+        .btn-gold {
+            background: var(--gold) !important;
+            color: #0d1117 !important;
+            border: none !important;
+        }
+
+        .btn-gold:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: rgba(255, 107, 107, 0.15) !important;
+            color: var(--red) !important;
+            border-color: rgba(255, 107, 107, 0.3) !important;
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 107, 107, 0.25) !important;
+        }
+
+        .btn-refresh {
+            background: rgba(0, 200, 151, 0.15) !important;
+            color: var(--green) !important;
+            border-color: rgba(0, 200, 151, 0.3) !important;
+        }
+
+        /* Log Table */
+        .log-container {
+            padding: 0 24px 24px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            background: var(--surface);
+            color: var(--text-dim);
+            text-align: left;
+            padding: 10px 12px;
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
+        tbody tr:hover {
+            background: rgba(212, 165, 67, 0.04);
+        }
+
+        td {
+            padding: 10px 12px;
+            vertical-align: top;
+            max-width: 400px;
+        }
+
+        /* Level Badges */
+        .level {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .level-error {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--red);
+        }
+
+        .level-warn {
+            background: rgba(255, 170, 0, 0.15);
+            color: var(--orange);
+        }
+
+        .level-info {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--blue);
+        }
+
+        .level-debug {
+            background: rgba(139, 148, 158, 0.15);
+            color: var(--text-dim);
+        }
+
+        /* Tag */
+        .tag {
+            background: var(--gold-dim);
+            color: var(--gold);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* User */
+        .user-id {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        /* Message */
+        .message {
+            font-family: var(--mono);
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        /* Metadata expandable */
+        .metadata-toggle {
+            color: var(--blue);
+            font-size: 11px;
+            cursor: pointer;
+            user-select: none;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        .metadata-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .metadata-content {
+            display: none;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 4px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .metadata-content.show {
+            display: block;
+        }
+
+        /* Time */
+        .time {
+            font-size: 11px;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+
+        .time-relative {
+            font-size: 10px;
+            color: var(--gold);
+        }
+
+        /* Device */
+        .device {
+            font-size: 11px;
+            color: var(--text-dim);
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .pagination-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Empty */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--gold);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Auto refresh indicator */
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--red);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+            animation: pulse-anim 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-anim {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>🛠️ Ez Finance <span class="badge">Admin Debug Console</span></h1>
+        <div class="header-actions">
+            <div class="auto-refresh">
+                <div class="pulse"></div>
+                <span id="autoRefreshLabel">Auto-refresh: OFF</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar" id="statsBar">
+        <div class="stat-card">
+            <div class="stat-value" id="totalLogs">-</div>
+            <div class="stat-label">📊 Total Logs</div>
+        </div>
+        <div class="stat-card error">
+            <div class="stat-value" id="errorCount">-</div>
+            <div class="stat-label">❌ Errors</div>
+        </div>
+        <div class="stat-card users">
+            <div class="stat-value" id="uniqueUsers">-</div>
+            <div class="stat-label">👥 Unique Users</div>
+        </div>
+        <div class="stat-card time">
+            <div class="stat-value" id="lastLogAt">-</div>
+            <div class="stat-label">🕐 Last Log</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <select id="filterLevel">
+            <option value="">ทุก Level</option>
+            <option value="error">❌ Error</option>
+            <option value="warn">⚠️ Warning</option>
+            <option value="info">ℹ️ Info</option>
+            <option value="debug">🔍 Debug</option>
+        </select>
+        <select id="filterTag">
+            <option value="">ทุก Tag</option>
+            <option value="login">🔐 Login</option>
+            <option value="sync">🔄 Sync</option>
+            <option value="network">🌐 Network</option>
+            <option value="crash">💥 Crash</option>
+            <option value="app">📱 App</option>
+            <option value="setup">⚙️ Setup</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="🔍 ค้นหา message, user ID, ชื่อ...">
+        <button class="btn-gold" onclick="applyFilters()">ค้นหา</button>
+        <button class="btn-refresh" onclick="loadLogs()">🔄 Refresh</button>
+        <button class="btn-danger" onclick="clearLogs()">🗑️ ล้าง Log</button>
+    </div>
+
+    <!-- Log Table -->
+    <div class="log-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>เวลา</th>
+                    <th>Level</th>
+                    <th>Tag</th>
+                    <th>ผู้ใช้</th>
+                    <th>ข้อความ</th>
+                    <th>เวอร์ชัน</th>
+                    <th>อุปกรณ์</th>
+                </tr>
+            </thead>
+            <tbody id="logBody">
+                <tr>
+                    <td colspan="7" class="loading">
+                        <div class="spinner"></div><br>กำลังโหลด...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        <div class="pagination-info" id="paginationInfo">-</div>
+        <div class="pagination-btns">
+            <button onclick="prevPage()" id="btnPrev" disabled>◀ ก่อนหน้า</button>
+            <button onclick="nextPage()" id="btnNext" disabled>ถัดไป ▶</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        const LIMIT = 50;
+        let currentOffset = 0;
+        let totalLogs = 0;
+        let autoRefreshTimer = null;
+
+        // ─── Load Stats ───
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/api/debug-logs/stats`);
+                const data = await res.json();
+                document.getElementById('totalLogs').textContent = data.totalLogs.toLocaleString();
+                document.getElementById('errorCount').textContent = data.errorCount.toLocaleString();
+                document.getElementById('uniqueUsers').textContent = data.uniqueUsers.toLocaleString();
+                document.getElementById('lastLogAt').textContent = data.lastLogAt
+                    ? timeAgo(new Date(data.lastLogAt))
+                    : 'ยังไม่มี';
+            } catch (e) {
+                console.error('Stats error:', e);
+            }
+        }
+
+        // ─── Load Logs ───
+        async function loadLogs() {
+            const level = document.getElementById('filterLevel').value;
+            const tag = document.getElementById('filterTag').value;
+            const search = document.getElementById('filterSearch').value;
+
+            const params = new URLSearchParams({
+                limit: LIMIT,
+                offset: currentOffset,
+            });
+            if (level) params.set('level', level);
+            if (tag) params.set('tag', tag);
+            if (search) params.set('search', search);
+
+            const body = document.getElementById('logBody');
+            body.innerHTML = '<tr><td colspan="7" class="loading"><div class="spinner"></div><br>กำลังโหลด...</td></tr>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/debug-logs?${params}`);
+                const data = await res.json();
+                totalLogs = data.pagination.total;
+
+                if (data.data.length === 0) {
+                    body.innerHTML = `
+                    <tr><td colspan="7" class="empty">
+                        <div class="empty-icon">📭</div>
+                        <div>ยังไม่มี Debug Log</div>
+                        <div style="margin-top:8px;font-size:12px;">เมื่อแอปส่ง log มา จะปรากฏที่นี่</div>
+                    </td></tr>`;
+                } else {
+                    body.innerHTML = data.data.map(log => renderRow(log)).join('');
+                }
+
+                // Pagination
+                document.getElementById('paginationInfo').textContent =
+                    `แสดง ${currentOffset + 1} - ${Math.min(currentOffset + LIMIT, totalLogs)} จาก ${totalLogs} รายการ`;
+                document.getElementById('btnPrev').disabled = currentOffset === 0;
+                document.getElementById('btnNext').disabled = !data.pagination.hasMore;
+            } catch (e) {
+                body.innerHTML = `<tr><td colspan="7" class="empty" style="color:var(--red)">❌ ไม่สามารถโหลด log ได้: ${e.message}</td></tr>`;
+            }
+
+            loadStats();
+        }
+
+        // ─── Render Row ───
+        function renderRow(log) {
+            const time = new Date(log.createdAt);
+            const timeStr = time.toLocaleString('th-TH', { hour12: false });
+            const relativeStr = timeAgo(time);
+
+            const levelClass = `level-${log.level}`;
+            const levelIcon = { error: '❌', warn: '⚠️', info: 'ℹ️', debug: '🔍' }[log.level] || '📝';
+
+            const metaId = `meta-${log.id}`;
+            const metaHtml = log.metadata ? `
+            <span class="metadata-toggle" onclick="toggleMeta('${metaId}')">▶ ดู metadata</span>
+            <div class="metadata-content" id="${metaId}">${formatJSON(log.metadata)}</div>
+        ` : '';
+
+            return `
+        <tr>
+            <td>
+                <div class="time">${timeStr}</div>
+                <div class="time-relative">${relativeStr}</div>
+            </td>
+            <td><span class="level ${levelClass}">${levelIcon} ${log.level}</span></td>
+            <td><span class="tag">${log.tag}</span></td>
+            <td>
+                ${log.displayName ? `<div class="user-name">${escapeHtml(log.displayName)}</div>` : ''}
+                <div class="user-id" title="${escapeHtml(log.lineUserId || '-')}">${log.lineUserId ? log.lineUserId.substring(0, 16) + '...' : '-'}</div>
+            </td>
+            <td>
+                <div class="message">${escapeHtml(log.message)}</div>
+                ${metaHtml}
+            </td>
+            <td><span style="font-size:12px;color:var(--text-dim)">${escapeHtml(log.appVersion || '-')}</span></td>
+            <td><div class="device">${escapeHtml(log.deviceInfo || '-')}</div></td>
+        </tr>`;
+        }
+
+        // ─── Helpers ───
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return `${seconds}s ago`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function formatJSON(str) {
+            try {
+                return JSON.stringify(JSON.parse(str), null, 2);
+            } catch {
+                return str;
+            }
+        }
+
+        function toggleMeta(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.toggle('show');
+                const toggle = el.previousElementSibling;
+                if (toggle) toggle.textContent = el.classList.contains('show') ? '▼ ซ่อน metadata' : '▶ ดู metadata';
+            }
+        }
+
+        function applyFilters() {
+            currentOffset = 0;
+            loadLogs();
+        }
+
+        function prevPage() {
+            currentOffset = Math.max(0, currentOffset - LIMIT);
+            loadLogs();
+        }
+
+        function nextPage() {
+            currentOffset += LIMIT;
+            loadLogs();
+        }
+
+        async function clearLogs() {
+            if (!confirm('⚠️ คุณแน่ใจหรือว่าต้องการลบ Debug Log ทั้งหมด?')) return;
+            try {
+                await fetch(`${API_BASE}/api/debug-logs`, { method: 'DELETE' });
+                loadLogs();
+            } catch (e) {
+                alert('ไม่สามารถลบ log ได้: ' + e.message);
+            }
+        }
+
+        // ─── Enter key search ───
+        document.getElementById('filterSearch').addEventListener('keydown', e => {
+            if (e.key === 'Enter') applyFilters();
+        });
+
+        // ─── Auto Refresh ───
+        function startAutoRefresh() {
+            autoRefreshTimer = setInterval(() => {
+                loadLogs();
+            }, 10000);
+        }
+
+        // ─── Init ───
+        loadLogs();
+        // startAutoRefresh();
+    </script>
+
+</body>
+
+</html>
