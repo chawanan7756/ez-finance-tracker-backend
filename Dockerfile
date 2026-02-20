@@ -22,5 +22,5 @@ COPY src ./src
 ENV PORT=3000
 EXPOSE 3000
 
-# Start command
-CMD ["node", "src/index.js"]
+# Run migrations and then start the server
+CMD npx prisma migrate deploy && node src/index.js
